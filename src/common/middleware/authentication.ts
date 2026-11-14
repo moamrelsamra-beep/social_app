@@ -1,10 +1,13 @@
 import type { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
-import type { JwtPayload } from "jsonwebtoken";
+import type { Model } from "mongoose";
 import userModel from "../../DB/models/user.model.js";
-import { ACCESS_TOKEN_SIGNATURE } from "../../config/config.service.js";
-//import { ttl } from "../../DB/redis.connection.js" // adjust to where your ttl helper is
-import { redisService } from "../../DB/redis.connection.js";
+import { AppError } from "../utils/globalErrorHandling.js";
+import {
+  extractToken,
+  isRevoked,
+  issuedBeforeCredentialChange,
+  verifyAccessToken,
+} from "../service/token.service.js";
 
 export const authentication = async (
   req: Request,
@@ -14,39 +17,31 @@ export const authentication = async (
   const { authorization } = req.headers;
 
   if (!authorization) {
-    throw new Error("Token not exist", { cause: 401 });
+    throw new AppError("Token not exist", 401);
   }
 
-  const decoded = jwt.verify(
-    authorization,
-    ACCESS_TOKEN_SIGNATURE
-  ) as JwtPayload;
+  // throws JsonWebTokenError / TokenExpiredError -> mapped to 401 by the global error handler
+  const decoded = verifyAccessToken(extractToken(authorization));
 
-  if (!decoded?.id) {
-    throw new Error("Invalid token", { cause: 400 });
+  if (!decoded?.id || !decoded.jti) {
+    throw new AppError("Invalid token", 401);
   }
 
-  const user = await userModel.findById(decoded.id);
+  const user = await (userModel as Model<any>).findById(decoded.id);
   if (!user) {
-    throw new Error("User not exist", { cause: 404 });
+    throw new AppError("User not exist", 404);
   }
 
   if (!user.isConfirmed) {
-    throw new Error("User not confirmed yet", { cause: 400 });
+    throw new AppError("User not confirmed yet", 403);
   }
 
-  if (
-    user.changeCredentialAt &&
-    decoded.iat &&
-    user.changeCredentialAt.getTime() > decoded.iat * 1000
-  ) {
-    throw new Error("Token expired, you must log in again", { cause: 401 });
+  if (issuedBeforeCredentialChange(user, decoded.iat)) {
+    throw new AppError("Token expired, you must log in again", 401);
   }
 
-  if ((await ttl(`revoke_token::${user._id}::${decoded.jti}`)) > 0) {
-    throw new Error("Invalid revoked token, you should login again", {
-      cause: 401,
-    });
+  if (await isRevoked(user._id.toString(), decoded.jti)) {
+    throw new AppError("Invalid revoked token, you should login again", 401);
   }
 
   req.user = user;

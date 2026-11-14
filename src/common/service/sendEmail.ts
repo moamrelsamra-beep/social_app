@@ -6,7 +6,7 @@ import { EMAIL, PASSWORD } from "../../config/config.service.js";
 interface ISendEmail {
   to: string | string[];
   subject: string;
-  text: string; 
+  text?: string; 
   html?: string;
   attachments?: Mail.Attachment[];
 }
@@ -30,6 +30,7 @@ const sendEmail = async ({
     from: `"Mohamed" <${EMAIL}>`,
     to,
     subject,
+    text: text || "",
     html: html || "",
     attachments: attachments || [],
   });

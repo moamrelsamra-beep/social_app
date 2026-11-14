@@ -1,5 +1,4 @@
-import { PopulateOptions, ProjectionType } from "mongoose";
-import { Model, QueryFilter, QueryOptions } from "mongoose";
+import { Model } from "mongoose";
 import userModel, { IUser } from "../models/user.model.js";
 import  {DBRepository}  from "./db.repository.js";
 

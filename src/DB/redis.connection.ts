@@ -1,11 +1,13 @@
 import { createClient, RedisClientType } from "redis"
+import { REDIS_URL } from "../config/config.service.js";
 
 
 export class RedisService {
     private readonly redis_client: RedisClientType
     constructor() {
         this.redis_client = createClient({
-            url:"rediss://default:gQAAAAAAA5PkAAIgcDE1NzE2YzFjYTRiODI0YWU3YTkxODcyYzg4MjA2NTYyZQ@refined-tortoise-234468.upstash.io:6379"
+            url:
+            "rediss://default:gQAAAAAAA5PkAAIgcDE1NzE2YzFjYTRiODI0YWU3YTkxODcyYzg4MjA2NTYyZQ@refined-tortoise-234468.upstash.io:6379"
         });
     
        

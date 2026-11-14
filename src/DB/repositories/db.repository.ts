@@ -1,5 +1,4 @@
-import e from "express";
-import { PopulateOptions, ProjectionType } from "mongoose";
+import { PipelineStage, PopulateOptions, ProjectionType, UpdateQuery } from "mongoose";
 import { Model, QueryFilter, QueryOptions } from "mongoose";
 
 
@@ -7,60 +6,75 @@ import { Model, QueryFilter, QueryOptions } from "mongoose";
 export abstract class DBRepository<T> {
     constructor(protected readonly model: Model<T>) { }
 
-      create = async( data:Partial<T>) => {
-    return await this.model.create([data])
-}
+    create = async (data: Partial<T>) => {
+        return await this.model.create([data])
+    }
 
-  findOne = async({ filter, projection, options }:{
-    filter:QueryFilter<T>, 
-    projection?: ProjectionType<T> ,
-    options?: QueryOptions<T>
-  }) => {
-    return await this.model.findOne(filter, projection, options)
-}
+    findOne = async ({ filter, projection, options }: {
+        filter: QueryFilter<T>,
+        projection?: ProjectionType<T>,
+        options?: QueryOptions<T>
+    }) => {
+        return await this.model.findOne(filter, projection, options)
+    }
 
-  find = async({ filter, options = {}}:{
-    filter:QueryFilter<T>, 
-    options?: QueryOptions<T>
-  }) => {
-      let data = this.model.find(filter)
-     if(options?.limit) data = data.limit(options?.limit)
-     if(options?.skip) data = data.skip(options?.skip)
-     if(options?.sort) data = data.sort(options?.sort)
-     if(options?.select) data = data.select(options?.select)
-     if(options?.populate) data = data.populate(options?.populate as PopulateOptions)
-   
-    return await data.exec()
-}
+    find = async ({ filter, options = {} }: {
+        filter: QueryFilter<T>,
+        options?: QueryOptions<T>
+    }) => {
+        let data = this.model.find(filter)
+        if (options?.limit) data = data.limit(options?.limit)
+        if (options?.skip) data = data.skip(options?.skip)
+        if (options?.sort) data = data.sort(options?.sort)
+        if (options?.select) data = data.select(options?.select)
+        if (options?.populate) data = data.populate(options?.populate as PopulateOptions)
 
-  findById = async({ id, options = {}}:{
-    id: string,
-    options: QueryOptions<T>
-  }) => {
-    return await this.model.findById(id, options)
-}
+        return await data.exec()
+    }
 
-  findByIdAndUpdate = async({ id, update, options = {}}:{
-    id: string,
-    update: Partial<T>,
-    options: QueryOptions<T>
-  }) => {
-    return await this.model.findByIdAndUpdate(id, update, {new: true,runValidators: true, ...options})
-}
+    findById = async ({ id, options = {} }: {
+        id: string,
+        options?: QueryOptions<T>
+    }) => {
+        return await this.model.findById(id, null, options)
+    }
 
-  findOneAndUpdate = async ({ filter, update, options = {} }: {
-    filter: QueryFilter<T>,
-    update: Partial<T>,
-    options: QueryOptions<T>
-  }) => {
-    return await this.model.findOneAndUpdate(filter, update, { new: true, runValidators: true, ...options })
-}
+    findByIdAndUpdate = async ({ id, update, options = {} }: {
+        id: string,
+        update: UpdateQuery<T>,
+        options?: QueryOptions<T>
+    }) => {
+        return await this.model.findByIdAndUpdate(id, update, { new: true, runValidators: true, ...options })
+    }
 
-  findOneAndDelete = async ({ filter}: {
-    filter: QueryFilter<T>
-  }) => {
-    return await this.model.findOneAndDelete(filter)
-}
+    findOneAndUpdate = async ({ filter, update, options = {} }: {
+        filter: QueryFilter<T>,
+        update: UpdateQuery<T>,
+        options?: QueryOptions<T>
+    }) => {
+        return await this.model.findOneAndUpdate(filter, update, { new: true, runValidators: true, ...options })
+    }
+
+    findOneAndDelete = async ({ filter }: {
+        filter: QueryFilter<T>
+    }) => {
+        return await this.model.findOneAndDelete(filter)
+    }
+
+    updateMany = async ({ filter, update }: {
+        filter: QueryFilter<T>,
+        update: UpdateQuery<T>
+    }) => {
+        return await this.model.updateMany(filter, update)
+    }
+
+    countDocuments = async (filter: QueryFilter<T>) => {
+        return await this.model.countDocuments(filter)
+    }
+
+    aggregate = async <R = any>(pipeline: PipelineStage[]) => {
+        return await this.model.aggregate<R>(pipeline)
+    }
 
 }
 
